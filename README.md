@@ -100,3 +100,13 @@ Derived from [Bloom by SehajveerSingh2005](https://github.com/SehajveerSingh2005
 GPL-3.0-only. See [LICENSE](LICENSE). Application marks belong to their respective owners. This project is not affiliated with Apple or Microsoft.
 
 Material implementation and Apple reference notes: [APPLE-LIQUID-GLASS.md](APPLE-LIQUID-GLASS.md). This is a custom Windows GPU renderer, not Apple's native SwiftUI runtime.
+
+ ## Star History
+
+<a href="https://www.star-history.com/?type=date&repos=Bloom%2FBloom">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=Hexvoid-zero/Bloom&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=Hexvoid-zero/Bloom&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=Hexvoid-zero/Bloom&type=date&legend=top-left" />
+ </picture>
+</a>
