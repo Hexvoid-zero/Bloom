@@ -1,0 +1,22 @@
+.notch-panel-tabs{position:absolute;top:7px;left:12px;right:12px;height:28px;display:flex;align-items:center;justify-content:center;gap:3px;z-index:50;border-bottom:1px solid #ffffff0b;padding-bottom:4px}.notch-panel-tabs button{white-space:nowrap;background:transparent;border:0;color:#83899f;border-radius:6px;font:10px "Segoe UI",sans-serif;padding:5px 8px;cursor:pointer}.notch-panel-tabs button.active{background:#b5a3fb18;color:#c5b7ff}.notch-panel-tabs button:hover{background:#ffffff0c;color:#eee}.notch-panel-tabs button:last-child{font-size:15px;padding:2px 6px;color:#9295a7;margin-left:auto}.notch-agent-panel{position:absolute;left:0;right:0;top:43px;bottom:0;padding:16px 20px 20px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#464052 transparent;z-index:30}.notch-agent-panel .agent-section-heading h3{font-size:17px}.notch-companion-button{position:relative;flex-shrink:0;z-index:25;border:0;background:none;padding:0;cursor:pointer;display:grid;place-items:center}.notch-agent-indicator{position:relative;flex-shrink:0;z-index:25;display:flex;align-items:center;gap:6px;color:#bbb4d9;background:#b4a2f810;border:1px solid #b4a2f820;border-radius:10px;padding:2px 7px;font-size:10px;cursor:pointer}.coucou-inspired .notch-quick-controls button{width:auto;flex:1}.coucou-inspired.with-panel-tabs{background:linear-gradient(145deg,#18171e,#0b0c10 70%)}.notch-panel-tabs button:focus-visible,.notch-companion-button:focus-visible,.notch-agent-indicator:focus-visible{outline:2px solid #b9a4fa;outline-offset:2px}
+
+.notch-media-empty{position:absolute;left:20px;right:20px;top:70px;bottom:15px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#b7a6e4;font-size:12px;z-index:25}.notch-media-empty strong{font-weight:500;color:#ddd7eb}.notch-media-empty span{font-size:10px;color:#777f94}
+
+/* Reserved tracks: no status item may paint over the centered clock. */
+.coucou-inspired .main-row-inner{display:grid;grid-template-columns:minmax(0,1fr) max-content minmax(0,1fr);column-gap:12px;width:100%;}
+.coucou-inspired .side-content{width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;}
+.coucou-inspired .side-content::-webkit-scrollbar{display:none;}
+.coucou-inspired .side-content>*{flex-shrink:0;}
+.coucou-inspired .side-content.right{justify-content:flex-end;}
+.coucou-inspired .time-center{flex-shrink:0;min-width:max-content;}
+.coucou-inspired .passive-feature{white-space:nowrap;flex-shrink:0;}
+.coucou-inspired .notch-companion-button{height:24px;width:27px;}
+.coucou-inspired .notch-quick-controls{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:5px;left:10px;right:10px;}
+.coucou-inspired .notch-quick-controls button{width:100%;min-width:0;gap:4px;padding:0 4px;font-size:10px;overflow:hidden;white-space:nowrap;}
+.coucou-inspired .command-center-content-minimal{overflow-y:auto;overflow-x:hidden;justify-content:flex-start;gap:14px;scrollbar-width:thin;scrollbar-color:#514767 transparent;}
+.command-center-content-minimal>*{flex-shrink:0;max-width:100%;box-sizing:border-box;}
+.notch-system-controls{width:100%;white-space:normal;}.notch-controls-heading{display:flex;justify-content:space-between;gap:8px;font-size:11px;margin-bottom:9px;}.notch-controls-heading span{font-size:9px;opacity:.5;}.notch-controls-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}.notch-controls-grid button{display:flex;align-items:center;gap:6px;min-width:0;padding:9px 7px;color:inherit;background:#ffffff09;border:1px solid #ffffff09;border-radius:8px;font:10px/1.3 "Segoe UI",sans-serif;cursor:pointer;text-align:left;}.notch-controls-grid button span{flex:1;min-width:0;overflow-wrap:anywhere;}.notch-controls-grid button svg{flex-shrink:0;}.notch-controls-grid button:hover{background:#b4a2f820;}.notch-system-controls p{color:#edaa9c;font-size:10px;}
+.notch-panel-tabs{overflow-x:auto;scrollbar-width:none;justify-content:flex-start;}.notch-panel-tabs button{flex-shrink:0;}.notch-panel-tabs::-webkit-scrollbar{display:none;}.qp-switch:disabled{opacity:.5;cursor:wait;}.notch-quick-controls button svg{flex-shrink:0;}
+.coucou-inspired .notch-quick-controls{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:6px;}
+.coucou-inspired .notch-quick-controls button{min-width:0;width:100%;box-sizing:border-box;padding:0 5px;font-size:10px;gap:4px;white-space:nowrap;overflow:hidden;}
+.coucou-inspired .notch-quick-controls button svg{width:12px;height:12px;}

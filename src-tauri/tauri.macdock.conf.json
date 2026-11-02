@@ -1,0 +1,5 @@
+{
+	"productName": "Bloom Mac Dock",
+	"identifier": "com.sehaz.bloom.macdock",
+	"bundle": { "createUpdaterArtifacts": false, "targets": ["nsis"] }
+}

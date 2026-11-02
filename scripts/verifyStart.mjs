@@ -1,0 +1,131 @@
+// Isolated browser fixtures. Native commands are mocked; no user app is launched.
+import {createRequire} from 'node:module';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import assert from 'node:assert/strict';
+const require=createRequire(import.meta.url);
+const {chromium}=require(path.join(process.env.BLOOM_TEST_TOOLS,'playwright'));
+const out=process.env.BLOOM_EVIDENCE;
+await fs.mkdir(out,{recursive:true});
+const browser=await chromium.launch({channel:'chrome',headless:true});
+const context=await browser.newContext({viewport:{width:1120,height:790}});
+const errors=[];
+context.on('page',p=>p.on('pageerror',e=>errors.push(e.message)));
+function setup(label){
+ const icon=(name,c)=>'data:image/svg+xml;base64,'+btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><rect width="48" height="48" rx="12" fill="${c}"/><text x="24" y="32" fill="white" font-family="Arial" font-size="25" text-anchor="middle">${name[0]}</text></svg>`);
+ const names=['Chrome','Microsoft Word','Visual Studio Code','Claude','Codex','Cursor','Settings','Photos','Notepad','Calculator','Spotify','Phone Link','File Explorer','Outlook','Terminal','Paint','Firefox','Gemini CLI','OneNote','PowerPoint'];
+ const apps=names.map((name,i)=>({name,path:`app-${i}`,icon:icon(name,['#537abc','#b7638a','#6c59b1','#bb7958','#548f86'][i%5])}));
+ const sessions=[{id:'a',agent:'Codex',project:'Bloom',status:'working',detail:'Running a tool',updated_at:Date.now()/1000,path:'C:\\Projects\\Bloom'},{id:'b',agent:'Claude Code',project:'Website',status:'needs-attention',detail:'Permission request',updated_at:Date.now()/1000,path:'C:\\Projects\\Website'},{id:'c',agent:'Cursor',project:'Mobile app',status:'completed',detail:'Turn completed',updated_at:Date.now()/1000,path:'C:\\Projects\\Mobile'},{id:'d',agent:'Antigravity',project:'Antigravity',status:'app-open',source:'process',detail:'App running; activity unavailable',updated_at:Date.now()/1000,path:''}];
+ const settings={'bloom-notch-mode':'overlay','bloom-scale':'1','bloom-dock-enabled':'false','bloom-first-run':'done','bloom-app-version':'3.10.0','bloom-weather-enabled':'false','bloom-corners-enabled':'false','bloom-start-preferences':localStorage.getItem('bloom-start-preferences')||''};
+ Object.entries(settings).forEach(([k,v])=>localStorage.setItem(k,v));localStorage.setItem('bloom-announcement-cache-at',String(Date.now()));
+ let id=0;const callbacks=new Map(),listeners=new Map();
+ window.__fixture={calls:[],settings,sessions,emit(event,payload){for(const [key,l]of listeners)if(l.event===event)callbacks.get(l.handler)?.({event,payload,id:key});}};
+ window.__TAURI_INTERNALS__={metadata:{currentWindow:{label},currentWebview:{label}},transformCallback(cb){callbacks.set(++id,cb);return id;},unregisterCallback(k){callbacks.delete(k);},async invoke(cmd,args={}){
+  window.__fixture.calls.push({cmd,args});
+  if(cmd==='load_settings')return settings;
+  if(cmd==='save_setting'){settings[args.key]=args.value;localStorage.setItem(args.key,args.value);window.__fixture.emit('settings-changed',{key:args.key,value:args.value});return;}
+  if(cmd==='plugin:event|listen'){listeners.set(++id,args);return id;}
+  if(cmd==='plugin:event|unlisten')return listeners.delete(args.eventId);
+  if(cmd==='get_installed_apps')return window.__fixture.catalogPending?[]:apps;
+  if(cmd==='load_pinned_apps')return apps.slice(0,16);
+  if(cmd==='get_agent_sessions')return window.__fixture.sessions;
+  if(cmd==='get_wifi_status')return {enabled:window.__fixture.wifiEnabled??true,connected:window.__fixture.wifiEnabled!==false,ssid:'Fixture Home'};
+  if(cmd==='wifi_list_networks')return {location_denied:false,networks:[{ssid:'Fixture Home',signal:92,security:'wpa2',connected:true,saved:true},{ssid:'Fixture Guest',signal:70,security:'wpa2',connected:false,saved:false}]};
+  if(cmd==='set_wifi_state'){if(window.__fixture.failWifiToggle)throw Error('Controlled radio failure');window.__fixture.wifiEnabled=args.enabled;return;}
+  if(cmd==='wifi_scan'){window.__fixture.emit('wifi-changed',null);return;}
+  if(cmd==='wifi_connect'||cmd==='wifi_disconnect'||cmd==='wifi_forget'){window.__fixture.emit('wifi-changed',null);return;}
+  if(cmd==='get_agent_hook_integrations')return [];
+  if(cmd==='get_start_context')return {username:'Workspace owner'};
+  if(cmd==='get_phone_link_status')return {installed:true,status:'available',phones:[{name:'Redmi Note 13 5G',connected:true,battery:null}],detail:'Bluetooth connected. Open Phone Link for messages, calls and notifications.'};
+  if(cmd==='get_audio_sessions')return [{pid:1,name:'Music',volume:.5,is_muted:false}];
+  if(cmd==='plugin:window|is_visible')return true;
+  if(cmd==='plugin:app|version')return '3.10.0';
+  if(cmd==='plugin:app|identifier')return 'com.sehaz.bloom.macdock';
+  if(cmd==='get_volume_state')return {volume:.5,is_muted:false};
+  if(cmd==='get_brightness')return 60;
+  if(cmd==='get_network_speed')return [0,0];
+  if(cmd==='get_cpu_usage'||cmd==='get_ram_usage'||cmd==='get_disk_space')return 20;
+  if(cmd==='load_shelf_items'||cmd==='get_bluetooth_devices'||cmd==='get_connected_bluetooth_devices'||cmd==='plugin:window|get_all_windows')return [];
+  return null;
+ }};
+ window.__TAURI_EVENT_PLUGIN_INTERNALS__={unregisterListener(){}};
+}
+const page=await context.newPage();await page.addInitScript(setup,'start');
+await page.goto('http://127.0.0.1:4173/start.html');
+await page.getByRole('heading',{name:'Pinned apps'}).waitFor();
+await page.waitForTimeout(450);await page.screenshot({path:path.join(out,'start-overview-fixture.png')});
+assert.equal(await page.locator('.start-app-grid').first().locator('.start-app-tile').count(),16);
+await page.getByRole('button',{name:'Power options',exact:true}).click();
+await page.getByRole('menu',{name:'Power options',exact:true}).waitFor();
+await page.screenshot({path:path.join(out,'start-power-fixture.png')});
+for(const [name,action] of [['Lock','lock'],['Sleep','sleep'],['Shut down','shutdown'],['Restart','restart']]){
+ if(!await page.getByRole('menu',{name:'Power options',exact:true}).isVisible())await page.getByRole('button',{name:'Power options',exact:true}).click();
+ await page.getByRole('menuitem',{name,exact:true}).click();
+ assert((await page.evaluate(()=>window.__fixture.calls)).some(c=>c.cmd==='power_action'&&c.args.action===action));
+}
+
+assert.equal(await page.getByText('1 working',{exact:true}).count(),1);
+assert.equal(await page.getByText('1 need you',{exact:true}).count(),1);
+assert.equal(await page.getByText('1 apps open',{exact:true}).count(),1);
+await page.getByRole('button',{name:'Messages Open in Phone Link'}).click();
+assert((await page.evaluate(()=>window.__fixture.calls)).some(c=>c.cmd==='phone_link_action'&&c.args.action==='messages'));
+await page.getByLabel('Search apps',{exact:true}).fill('Visual Studio');
+await page.getByRole('button',{name:'Visual Studio Code',exact:true}).waitFor();
+assert.equal(await page.locator('.start-app-tile').count(),1);
+await page.getByRole('button',{name:'Unpin Visual Studio Code',exact:true}).click();
+await page.waitForTimeout(100);
+assert.equal((await page.evaluate(()=>JSON.parse(window.__fixture.settings['bloom-start-preferences']))).pins.length,15);
+await page.waitForTimeout(450);await page.screenshot({path:path.join(out,'start-search-fixture.png')});
+await page.getByRole('button',{name:'Visual Studio Code',exact:true}).click();
+assert((await page.evaluate(()=>window.__fixture.calls)).some(c=>c.cmd==='open_app'&&c.args.appName==='app-2'));
+await page.getByRole('button',{name:'Agents',exact:true}).click();
+await page.locator('.agent-session-main').first().click();
+await page.waitForTimeout(450);await page.screenshot({path:path.join(out,'start-agents-fixture.png')});
+await page.setViewportSize({width:820,height:560});
+await page.waitForTimeout(450);await page.screenshot({path:path.join(out,'start-small-fixture.png')});
+assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth));
+const settings=await context.newPage();await settings.addInitScript(setup,'settings');await settings.setViewportSize({width:620,height:480});
+await settings.goto('http://127.0.0.1:4173/settings.html');await settings.getByRole('button',{name:'Start menu',exact:true}).click();
+await settings.getByLabel('Start layout density').selectOption('compact');await settings.getByLabel('Start accent').selectOption('mint');
+await settings.getByRole('checkbox',{name:'Phone Link panel',exact:false}).uncheck();
+await settings.getByLabel('Welcome text').fill('Everything in its place.');await settings.getByLabel('Welcome text').press('Enter');
+await settings.waitForTimeout(450);await settings.screenshot({path:path.join(out,'start-settings-fixture.png')});
+const pref=await settings.evaluate(()=>JSON.parse(window.__fixture.settings['bloom-start-preferences']));
+assert.equal(pref.phone,false);assert.equal(pref.density,'compact');assert.equal(pref.accent,'mint');assert.equal(pref.greeting,'Everything in its place.');
+await page.setViewportSize({width:1120,height:790});await page.reload();await page.getByRole('heading',{name:'Everything in its place.'}).waitFor();assert.equal(await page.locator('.start-phone').count(),0);
+await page.waitForTimeout(450);await page.screenshot({path:path.join(out,'start-customized-fixture.png')});
+await page.evaluate(()=>{window.__fixture.catalogPending=true;window.__fixture.emit('installed-apps-updated',null);});await page.getByText('0 apps',{exact:true}).waitFor();
+await page.evaluate(()=>{window.__fixture.catalogPending=false;window.__fixture.emit('installed-apps-updated',null);});await page.getByText('20 apps',{exact:true}).waitFor();
+const notch=await context.newPage();await notch.addInitScript(setup,'main');await notch.setViewportSize({width:1920,height:480});await notch.goto('http://127.0.0.1:4173/');
+await notch.waitForTimeout(600);await notch.evaluate(()=>window.__fixture.emit('splash-done',null));await notch.waitForTimeout(3000);
+const shell=notch.getByRole('region',{name:'Bloom top notch'});await shell.waitFor();await notch.waitForTimeout(450);await notch.screenshot({path:path.join(out,'coucou-notch-compact-fixture.png'),omitBackground:true});
+await notch.getByLabel('Open agent activity',{exact:true}).click();await notch.getByRole('navigation',{name:'Notch panels'}).waitFor();await notch.getByText('Agent activity',{exact:false}).first().waitFor();await notch.waitForTimeout(600);
+await notch.waitForTimeout(450);await notch.screenshot({path:path.join(out,'coucou-notch-agents-fixture.png'),omitBackground:true});
+await notch.getByRole('button',{name:'Wi-Fi',exact:true}).click();await notch.getByRole('switch',{name:'Wi-Fi',exact:true}).waitFor();
+await notch.getByRole('button',{name:'Fixture Home Connected',exact:false}).click();await notch.getByRole('button',{name:'Disconnect',exact:true}).click();
+assert((await notch.evaluate(()=>window.__fixture.calls)).some(c=>c.cmd==='wifi_disconnect'));
+await notch.getByRole('button',{name:'Fixture Guest',exact:false}).click();await notch.getByLabel('Wi-Fi password',{exact:true}).fill('fixture-password');
+await notch.waitForTimeout(400);await notch.screenshot({path:path.join(out,'notch-wifi-password-fixture.png'),omitBackground:true});
+await notch.getByRole('button',{name:'Connect',exact:true}).click();assert((await notch.evaluate(()=>window.__fixture.calls)).some(c=>c.cmd==='wifi_connect'&&c.args.ssid==='Fixture Guest'&&c.args.password==='fixture-password'));
+const wifiSwitch=notch.getByRole('switch',{name:'Wi-Fi',exact:true});await wifiSwitch.click();await notch.getByText('Wi-Fi is off',{exact:true}).waitFor();
+await notch.evaluate(()=>window.__fixture.failWifiToggle=true);await wifiSwitch.click();await notch.getByRole('alert').filter({hasText:'Controlled radio failure'}).waitFor();assert.equal(await wifiSwitch.getAttribute('aria-checked'),'false');
+await notch.screenshot({path:path.join(out,'notch-wifi-error-fixture.png'),omitBackground:true});
+await notch.evaluate(()=>window.__fixture.failWifiToggle=false);await wifiSwitch.click();await notch.getByText('Fixture Home',{exact:true}).waitFor();await notch.waitForTimeout(400);
+await notch.screenshot({path:path.join(out,'notch-wifi-networks-fixture.png'),omitBackground:true});
+const navGeometry=await notch.getByRole('navigation',{name:'Notch panels'}).evaluate(nav=>{const n=nav.getBoundingClientRect();return {left:n.left,right:n.right,buttons:[...nav.querySelectorAll('button')].map(b=>{const r=b.getBoundingClientRect();return {left:r.left,right:r.right}})};});
+assert(navGeometry.buttons.every((r,i)=>i===0||r.left>=navGeometry.buttons[i-1].right));
+await notch.getByRole('button',{name:'Calendar / Timer',exact:true}).click();await notch.waitForTimeout(500);await notch.waitForTimeout(450);await notch.screenshot({path:path.join(out,'coucou-notch-calendar-fixture.png'),omitBackground:true});
+await notch.getByRole('button',{name:'Controls',exact:true}).click();await notch.getByLabel('Master volume',{exact:true}).waitFor();await notch.getByLabel('Display brightness',{exact:true}).waitFor();await notch.waitForTimeout(450);await notch.screenshot({path:path.join(out,'coucou-notch-controls-fixture.png'),omitBackground:true});
+const systemControls=notch.getByRole('region',{name:'Windows quick controls'});await systemControls.scrollIntoViewIfNeeded();
+assert.equal(await systemControls.locator('button').count(),12);
+for(const button of await systemControls.locator('button').all())await button.click();
+for(const action of ['airplane-mode','display','projection','night-light','hotspot','sound','notifications','accessibility','power-settings','focus','vpn','settings'])assert((await notch.evaluate(()=>window.__fixture.calls)).some(c=>c.cmd==='start_system_action'&&c.args.action===action));
+await shell.screenshot({path:path.join(out,'notch-system-controls-fixture.png'),omitBackground:true});
+const controlFit=await systemControls.evaluate(section=>{const p=section.closest('.command-center-content-minimal').getBoundingClientRect();return [...section.querySelectorAll('button')].every(button=>{const r=button.getBoundingClientRect();return r.left>=p.left&&r.right<=p.right;});});assert(controlFit);
+assert.equal(await notch.evaluate(()=>getComputedStyle(document.body).backgroundColor),'rgba(0, 0, 0, 0)');
+await notch.getByRole('button',{name:'Shelf',exact:true}).click();await notch.waitForTimeout(400);await notch.waitForTimeout(450);await notch.screenshot({path:path.join(out,'coucou-notch-shelf-fixture.png'),omitBackground:true});
+await notch.evaluate(()=>window.__fixture.emit('media-update',{title:'Verification track',artist:'Local fixture',has_media:true,is_playing:true,position_ms:1000,duration_ms:180000}));
+await notch.getByRole('button',{name:'Music',exact:true}).click();await notch.getByText('Verification track',{exact:true}).first().waitFor();await notch.waitForTimeout(500);await notch.screenshot({path:path.join(out,'coucou-notch-media-fixture.png'),omitBackground:true});
+assert.deepEqual(errors,[]);
+await fs.writeFile(path.join(out,'browser-results.json'),JSON.stringify({passed:true,source:'production browser UI with mocked native IPC',apps:20,initialPins:16,search:true,independentPins:true,launchCommand:true,phoneCommand:true,agentStatuses:true,agentDetails:true,customizationPersisted:true,smallViewportFits:true,wifi:{directTab:true,toggle:true,toggleFailureRollsBack:true,passwordConnectCommand:true,disconnectCommand:true,navDoesNotOverlap:true},notchFeaturesPreserved:['calendar/timer','controls','shelf','media playback view','wifi'],errors},null,2));
+await browser.close();console.log('PASS Start search/pins/settings/phone/agents, compact notch and preserved panels');

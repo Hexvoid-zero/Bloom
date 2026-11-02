@@ -1,0 +1,201 @@
+.voice-panel {
+	padding: 12px 20px 16px;
+	color: #f6f5fa;
+	text-align: center;
+	max-height: calc(100% - 48px);
+	overflow: auto;
+	font:
+		13px/1.45 "Segoe UI",
+		sans-serif;
+	box-sizing: border-box;
+}
+.voice-panel[hidden] {
+	display: none;
+}
+.voice-panel header,
+.voice-panel header > div {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+}
+.voice-panel header {
+	justify-content: space-between;
+}
+.voice-panel header small {
+	font-size: 10px;
+	color: #b2b0c2;
+}
+.voice-panel button {
+	border: 1px solid #ffffff16;
+	border-radius: 9px;
+	background: #ffffff0b;
+	color: inherit;
+	padding: 7px 10px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	cursor: pointer;
+	font: inherit;
+}
+.voice-panel button:hover,
+.voice-panel button[aria-pressed="true"] {
+	background: #ffffff20;
+}
+.voice-panel button:focus-visible,
+.voice-panel textarea:focus-visible,
+.voice-panel select:focus-visible {
+	outline: 2px solid #a99bef;
+	outline-offset: 2px;
+}
+.voice-panel button:disabled {
+	opacity: 0.5;
+	cursor: wait;
+}
+.voice-wave {
+	height: 66px;
+	display: flex;
+	gap: 4px;
+	align-items: center;
+	justify-content: center;
+	margin-top: 6px;
+}
+.voice-wave i {
+	width: 4px;
+	background: #85818e;
+	border-radius: 4px;
+	transition: height 0.1s;
+}
+.voice-wave.live i {
+	background: #f389a6;
+}
+.voice-status {
+	font-size: 17px;
+	font-weight: 600;
+	display: flex;
+	justify-content: center;
+	gap: 12px;
+}
+.voice-status time {
+	font-variant-numeric: tabular-nums;
+	color: #b5aec4;
+	font-size: 13px;
+	align-self: center;
+}
+.voice-actions {
+	display: flex;
+	justify-content: center;
+	gap: 8px;
+	margin: 14px 0 10px;
+	flex-wrap: wrap;
+}
+.voice-actions .primary {
+	background: #f0ebff;
+	color: #272233;
+}
+.voice-panel textarea {
+	width: 100%;
+	min-height: 70px;
+	max-height: 100px;
+	resize: vertical;
+	background: #ffffff0a;
+	color: inherit;
+	border: 1px solid #ffffff1e;
+	border-radius: 10px;
+	padding: 9px;
+	box-sizing: border-box;
+	font: 13px/1.5 "Segoe UI";
+	margin-top: 10px;
+}
+.voice-hint,
+.voice-target {
+	display: block;
+	color: #a7a2b4;
+	font-size: 10px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.voice-target {
+	margin-top: 4px;
+}
+.voice-error {
+	color: #ffc2cc;
+	font-size: 11px;
+	margin: 8px 0 0;
+	white-space: normal;
+}
+.voice-history {
+	text-align: left;
+	margin-top: 14px;
+	max-height: 235px;
+	overflow: auto;
+}
+.voice-history > div {
+	display: flex;
+	justify-content: space-between;
+}
+.voice-history > button {
+	display: block;
+	text-align: left;
+	width: 100%;
+	margin-top: 6px;
+}
+.voice-history small,
+.voice-history span {
+	display: block;
+}
+.voice-history small {
+	color: #aaa3b7;
+	font-size: 10px;
+}
+.voice-history span {
+	max-height: 48px;
+	overflow: hidden;
+}
+.voice-settings {
+	text-align: left;
+	display: grid;
+	gap: 10px;
+	margin-top: 12px;
+	max-height: 260px;
+	overflow: auto;
+}
+.voice-settings label {
+	display: grid;
+	gap: 4px;
+	font-size: 12px;
+}
+.voice-settings select {
+	background: #25232b;
+	border: 1px solid #ffffff20;
+	border-radius: 6px;
+	padding: 6px;
+	color: inherit;
+	font: inherit;
+}
+.voice-settings .voice-check {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.voice-settings textarea {
+	margin-top: 0;
+}
+.voice-settings small {
+	color: #aaa3b7;
+	font-size: 10px;
+}
+@media (prefers-reduced-motion: reduce) {
+	.voice-wave i {
+		transition: none;
+	}
+}
+.voice-panel {
+	position: absolute;
+	top: 43px;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	z-index: 30;
+}

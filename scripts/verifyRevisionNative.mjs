@@ -1,0 +1,102 @@
+// Real packaged Windows WebView2 verification. No mocked IPC or profile replacement.
+import { createRequire } from 'node:module';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import assert from 'node:assert/strict';
+const require = createRequire(import.meta.url);
+const { chromium } = require(path.join(process.env.BLOOM_TEST_TOOLS, 'playwright'));
+const output = process.env.BLOOM_EVIDENCE;
+await fs.mkdir(output,{recursive:true});
+const browser = await chromium.connectOverCDP('http://127.0.0.1:49333');
+const pages = browser.contexts().flatMap(c=>c.pages());
+const dock = pages.find(p=>p.url().endsWith('/dock.html'));
+const main = pages.find(p=>p.url()==='http://tauri.localhost/');
+assert(dock && main);
+await dock.locator('.dock-expanded').waitFor({timeout:15000});
+await dock.waitForTimeout(1800);
+const invoke = (cmd,args={})=>dock.evaluate(({cmd,args})=>window.__TAURI_INTERNALS__.invoke(cmd,args),{cmd,args});
+let pins = await invoke('load_pinned_apps');
+assert.equal(pins.length,59);
+await dock.reload();
+await dock.locator('.dock-expanded').waitFor({timeout:15000});
+await dock.waitForTimeout(700);
+pins=await invoke('load_pinned_apps');
+const shortcuts = await fs.readdir(path.join(process.env.APPDATA,'Microsoft/Internet Explorer/Quick Launch/User Pinned/TaskBar'));
+const taskbar = shortcuts.filter(s=>s.toLowerCase().endsWith('.lnk'));
+const missing = taskbar.filter(s=>s!=='File Explorer.lnk' && !pins.some(p=>path.basename(p.path)===s));
+assert.deepEqual(missing,[]);
+assert.equal(await dock.locator('.dock-reorder-group > div').count(),59);
+const iconResults=[];
+for(const name of ['Google Chrome','Gmail','GitHub','X','YouTube','Vercel','Stitch']) {
+  const pin=pins.find(p=>p.name===name); assert(pin,name);
+  const data=await invoke('get_app_icon',{path:pin.path,name:pin.name,hwnd:null});
+  assert(data?.startsWith('data:image/'),`Missing icon: ${name}`);
+  const hash=crypto.createHash('sha256').update(data).digest('hex');
+  iconResults.push({name,hash});
+}
+assert.equal(new Set(iconResults.map(i=>i.hash)).size,iconResults.length);
+const dockState=await dock.evaluate(()=>{
+  const rect=document.querySelector('.dock').getBoundingClientRect();
+  return {viewport:{width:innerWidth,height:innerHeight},tray:rect.toJSON(),loadedIcons:[...document.querySelectorAll('.dock-icon img')].filter(i=>i.complete&&i.naturalWidth>0).length};
+});
+assert(dockState.tray.left>=0 && dockState.tray.right<=dockState.viewport.width+1);
+assert(dockState.loadedIcons>=59);
+await dock.locator('.dock').screenshot({path:path.join(output,'native-imported-dock.png'),omitBackground:true});
+await dock.screenshot({path:path.join(output,'native-full-strip.png'),omitBackground:true});
+const icon=dock.locator('.dock-reorder-group .dock-icon-wrapper').nth(24);
+await icon.hover();await dock.waitForTimeout(250);
+const scales=await dock.locator('.dock-reorder-group .dock-icon').evaluateAll(els=>els.map(e=>Number(getComputedStyle(e).scale)));
+assert(scales[24]>1.15 && scales[24]<=1.23);
+assert(scales[23]<=1.05 && scales[25]<=1.05);
+await dock.locator('.dock').screenshot({path:path.join(output,'native-gentle-hover.png'),omitBackground:true});
+const runningWindows=await invoke('get_active_windows');
+const xWindow=runningWindows.find(w=>w.name==='X');
+const explorerWindow=runningWindows.find(w=>w.name==='Windows Explorer');
+assert(xWindow?.hwnd && explorerWindow?.hwnd);
+if((await invoke('get_active_app_appearance'))?.hwnd===xWindow.hwnd)
+  await invoke('focus_window',{hwnd:explorerWindow.hwnd});
+else if((await invoke('get_active_app_appearance'))?.hwnd!==explorerWindow.hwnd)
+  await invoke('focus_window',{hwnd:explorerWindow.hwnd});
+const xIcon=dock.locator('.dock-icon-wrapper').filter({has:dock.locator('img[alt="X"]')}).first();
+await xIcon.click();
+await dock.waitForTimeout(700);
+const finalClick=await invoke('get_active_app_appearance');
+assert.equal(finalClick?.hwnd,xWindow.hwnd,'Click on the X icon near the far end of the row did not focus its app');
+await dock.screenshot({path:path.join(output,'native-last-icon-click.png'),omitBackground:true});
+await dock.mouse.move(5,5);
+const colors=[];
+const windows=await invoke('get_active_windows');
+for(const name of ['X','Windows Explorer']) {
+  const win=windows.find(w=>w.name===name);assert(win,name);
+  // Focus a different window first so focus_window's taskbar toggle cannot minimize the target.
+  const other=windows.find(w=>w.name===(name==='X'?'Windows Explorer':'X'));
+  let active=await invoke('get_active_app_appearance');
+  if(active?.hwnd===win.hwnd)await invoke('focus_window',{hwnd:other.hwnd});
+  await invoke('focus_window',{hwnd:win.hwnd});
+  await dock.waitForTimeout(1800);
+  active=await invoke('get_active_app_appearance');
+  assert.equal(active?.hwnd,win.hwnd);
+  const band=await dock.locator('.dock-backdrop').evaluate(e=>({color:getComputedStyle(e).backgroundColor,rect:e.getBoundingClientRect().toJSON(),width:innerWidth}));
+  assert.equal(band.color,`rgb(${active.color.join(', ')})`);
+  assert.equal(band.rect.width,band.width);
+  assert(band.rect.height>=72 && band.rect.height<=74);
+  colors.push({name,active,band});
+  await dock.screenshot({path:path.join(output,`native-strip-${name==='X'?'web-app':'explorer'}.png`),omitBackground:true});
+  await main.locator('.mac-menu-bar').screenshot({path:path.join(output,`native-menu-${name==='X'?'web-app':'explorer'}.png`),omitBackground:true});
+}
+assert.notDeepEqual(colors[0].active.color,colors[1].active.color);
+const menuRect=await main.locator('.mac-menu-bar').evaluate(e=>({rect:e.getBoundingClientRect().toJSON(),width:innerWidth}));
+assert.equal(menuRect.rect.width,menuRect.width);assert.equal(menuRect.rect.height,32);
+await main.getByRole('button',{name:'Calendar',exact:true}).click();
+await main.locator('.calendar-grid').waitFor();
+await main.screenshot({path:path.join(output,'native-top-calendar.png'),omitBackground:true});
+await main.getByRole('button',{name:'Control Center',exact:true}).click();
+await main.locator('.command-center-content-minimal').waitFor();
+await main.screenshot({path:path.join(output,'native-top-controls.png'),omitBackground:true});
+await dock.reload();await dock.locator('.dock-expanded').waitFor();
+assert.equal((await invoke('load_pinned_apps')).length,59);
+const result={passed:true,backend:'real Tauri IPC, packaged Windows WebView2',taskbarShortcuts:taskbar.length,pins:59,missing,icons:iconResults,dock:dockState,hover:{selected:scales[24],left:scales[23],right:scales[25]},farEndClick:{name:finalClick.name,hwnd:finalClick.hwnd},colors,menuRect,calendar:true,controlCenter:true,reloadedPins:59};
+await fs.writeFile(path.join(output,'native-revision-verification.json'),JSON.stringify(result,null,2));
+console.log(JSON.stringify(result,null,2));
+await browser.close();
