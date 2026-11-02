@@ -1,8 +1,12 @@
+<div align="center">
+
 # Bloom Mac Dock for Windows
 
 A see-through dock, a compact top notch and a frosted Start menu for Windows.
 
 ![Bloom](public/bloom-mark.svg)
+
+<div align="left">  
 
 ## Features
 
